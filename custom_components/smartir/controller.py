@@ -87,7 +87,7 @@ class UnfoldedCircleController(AbstractController):
             ATTR_ENTITY_ID: self._controller_data,
             'command':  commands,
             'delay_secs': self._delay,
-            'device': 'airco'
+            'device': 'smartir'
         }
 
         await self.hass.services.async_call(
