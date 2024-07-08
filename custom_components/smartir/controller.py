@@ -15,17 +15,20 @@ XIAOMI_CONTROLLER = 'Xiaomi'
 MQTT_CONTROLLER = 'MQTT'
 LOOKIN_CONTROLLER = 'LOOKin'
 ESPHOME_CONTROLLER = 'ESPHome'
+UCR2_CONTROLLER = 'UnfoldedCircleRemote2'
 
 ENC_BASE64 = 'Base64'
 ENC_HEX = 'Hex'
 ENC_PRONTO = 'Pronto'
 ENC_RAW = 'Raw'
+ENC_TXT = 'Text'
 
 BROADLINK_COMMANDS_ENCODING = [ENC_BASE64, ENC_HEX, ENC_PRONTO]
 XIAOMI_COMMANDS_ENCODING = [ENC_PRONTO, ENC_RAW]
 MQTT_COMMANDS_ENCODING = [ENC_RAW]
 LOOKIN_COMMANDS_ENCODING = [ENC_PRONTO, ENC_RAW]
 ESPHOME_COMMANDS_ENCODING = [ENC_RAW]
+UCR2_COMMANDS_ENCODING = [ENC_TXT]
 
 
 def get_controller(hass, controller, encoding, controller_data, delay):
@@ -35,7 +38,8 @@ def get_controller(hass, controller, encoding, controller_data, delay):
         XIAOMI_CONTROLLER: XiaomiController,
         MQTT_CONTROLLER: MQTTController,
         LOOKIN_CONTROLLER: LookinController,
-        ESPHOME_CONTROLLER: ESPHomeController
+        ESPHOME_CONTROLLER: ESPHomeController,
+        UCR2_CONTROLLER: UnfoldedCircleController
     }
     try:
         return controllers[controller](hass, controller, encoding, controller_data, delay)
@@ -63,6 +67,31 @@ class AbstractController(ABC):
         """Send a command."""
         pass
 
+class UnfoldedCircleController(AbstractController):
+    def check_encoding(self, encoding):
+        """Check if the encoding is supported by the controller."""
+        if encoding not in UCR2_COMMANDS_ENCODING:
+            raise Exception("The encoding is not supported "
+                            "by the Broadlink controller.")
+    async def send(self, command):
+        """Send a command."""
+        commands = []
+
+        if not isinstance(command, list): 
+            command = [command]
+
+        for _command in command:
+            commands.append(_command)
+
+        service_data = {
+            ATTR_ENTITY_ID: self._controller_data,
+            'command':  commands,
+            'delay_secs': self._delay,
+            'device': 'airco'
+        }
+
+        await self.hass.services.async_call(
+            'remote', 'send_command', service_data)
 
 class BroadlinkController(AbstractController):
     """Controls a Broadlink device."""
@@ -71,7 +100,7 @@ class BroadlinkController(AbstractController):
         """Check if the encoding is supported by the controller."""
         if encoding not in BROADLINK_COMMANDS_ENCODING:
             raise Exception("The encoding is not supported "
-                            "by the Broadlink controller.")
+                            "by the UnfoldedCircleRemote2 controller.")
 
     async def send(self, command):
         """Send a command."""
